@@ -1,3 +1,4 @@
+using System.Text;
 using DMS.Domain.Entities;
 using DMS.Domain.Enums;
 using DMS.Persistance.Context;
@@ -58,7 +59,13 @@ public class DailyOrderProcessor(IServiceProvider serviceProvider, ILogger<Daily
         decimal totalRevenue = dailyOrders.SelectMany(o => o.Items).Sum(i => i.Quantity * i.Price);
         var ordersByStatus = dailyOrders.GroupBy(o => o.Status)
             .ToDictionary(g => g.Key, g => g.Count());
-
+        
+        var aggregationResult = new StringBuilder();
+        aggregationResult.AppendLine($"Total revenue: {totalRevenue}");
+        foreach ((OrderStatus status, int count) in ordersByStatus)
+            aggregationResult.AppendLine($"Orders with status {status}: {count}");
+        File.WriteAllText("daily_orders_aggregation.txt", aggregationResult.ToString());
+        
         logger.LogInformation("Order aggregation completed. Signaling synchronization...");
         _aggregationCompleted.Set();
     }
